@@ -181,3 +181,5 @@ finale/.dockerignore
 
 .env
 .vercel
+
+node_modules/
