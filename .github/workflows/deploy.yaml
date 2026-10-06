@@ -67,7 +67,6 @@ jobs:
           # Set environment variables for the script
           export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
           export DEFAULT_AWS_REGION=${{ secrets.DEFAULT_AWS_REGION }}
-          export TF_VAR_github_repository=${{ github.repository }}
           
           # Make script executable and run it
           chmod +x scripts/deploy-linux.sh
