@@ -43,7 +43,12 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:*"
+            # GitHub includes the immutable owner and repository ids in sub, for example
+            # repo:ovimura@6645704/generative-and-agentic-ai-in-production@1403691726:environment:dev
+            "token.actions.githubusercontent.com:sub" = [
+              "repo:${var.github_repository}:*",
+              "repo:${split("/", var.github_repository)[0]}@*/${split("/", var.github_repository)[1]}@*:*",
+            ]
           }
         }
       }
