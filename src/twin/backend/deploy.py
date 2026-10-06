@@ -1,7 +1,7 @@
 import os
 import shutil
-import zipfile
 import subprocess
+import zipfile
 
 
 def main():
@@ -16,26 +16,27 @@ def main():
     # Create package directory
     os.makedirs("lambda-package")
 
-    # Install dependencies using Docker with Lambda runtime image
+    # Install Linux wheels for Lambda's Python 3.12 runtime. This does not
+    # require Docker; the host Python only downloads the manylinux packages.
     print("Installing dependencies for Lambda runtime...")
-
-    # Use the official AWS Lambda Python 3.12 image
-    # This ensures compatibility with Lambda's runtime environment
     subprocess.run(
         [
-            "docker",
-            "run",
-            "--rm",
-            "-v",
-            f"{os.getcwd()}:/var/task",
-            "--platform",
-            "linux/amd64",  # Force x86_64 architecture
-            "--entrypoint",
-            "",  # Override the default entrypoint
-            "public.ecr.aws/lambda/python:3.12",
-            "/bin/sh",
-            "-c",
-            "pip install --target /var/task/lambda-package -r /var/task/requirements.txt --platform manylinux2014_x86_64 --only-binary=:all: --upgrade",
+            "uv",
+            "pip",
+            "install",
+            "--target",
+            "lambda-package",
+            "--requirements",
+            "requirements.txt",
+            "--python-platform",
+            "x86_64-manylinux2014",
+            "--python-version",
+            "3.12",
+            "--only-binary",
+            ":all:",
+            "--upgrade",
+            "--link-mode",
+            "copy",
         ],
         check=True,
     )
@@ -61,7 +62,7 @@ def main():
 
     # Show package size
     size_mb = os.path.getsize("lambda-deployment.zip") / (1024 * 1024)
-    print(f"✓ Created lambda-deployment.zip ({size_mb:.2f} MB)")
+    print(f"Created lambda-deployment.zip ({size_mb:.2f} MB)")
 
 
 if __name__ == "__main__":

@@ -106,34 +106,26 @@ def save_conversation(session_id: str, messages: List[Dict]):
 def call_bedrock(conversation: List[Dict], user_message: str) -> str:
     """Call AWS Bedrock with conversation history"""
     
-    # Build messages in Bedrock format
+    # Bedrock requires user and assistant roles to alternate, so the
+    # system prompt is passed separately rather than as a user message.
     messages = []
-    
-    # Add system prompt as first user message
-    # Or there's a better way to do this - pass in system=[{"text": prompt()}] to the converse call below
-    messages.append({
-        "role": "user", 
-        "content": [{"text": f"System: {prompt()}"}]
-    })
-    
-    # Add conversation history (limit to last 25 exchanges)
+
     for msg in conversation[-50:]:
         messages.append({
             "role": msg["role"],
             "content": [{"text": msg["content"]}]
         })
-    
-    # Add current user message
+
     messages.append({
         "role": "user",
         "content": [{"text": user_message}]
     })
-    
+
     try:
-        # Call Bedrock using the converse API
         response = bedrock_client.converse(
             modelId=BEDROCK_MODEL_ID,
             messages=messages,
+            system=[{"text": prompt()}],
             inferenceConfig={
                 "maxTokens": 2000,
                 "temperature": 0.7,
@@ -148,8 +140,9 @@ def call_bedrock(conversation: List[Dict], user_message: str) -> str:
         error_code = e.response['Error']['Code']
         if error_code == 'ValidationException':
             # Handle message format issues
+            message = e.response["Error"].get("Message", str(e))
             print(f"Bedrock validation error: {e}")
-            raise HTTPException(status_code=400, detail="Invalid message format for Bedrock")
+            raise HTTPException(status_code=400, detail=message)
         elif error_code == 'AccessDeniedException':
             print(f"Bedrock access denied: {e}")
             raise HTTPException(status_code=403, detail="Access denied to Bedrock model")
