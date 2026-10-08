@@ -101,13 +101,19 @@ def create_playwright_mcp_server(timeout_seconds=120):
     config = {
         "browser": {
             "launchOptions": {
+                # --single-process breaks Chromium's DNS resolver ("Cannot use
+                # V8 Proxy resolver in single process mode") and browser_navigate
+                # then waits until the MCP client times out.
                 "args": [
-                    "--single-process",
-                    "--no-zygote",
                     "--disable-gpu",
+                    "--disable-dev-shm-usage",
                 ]
             }
-        }
+        },
+        "timeouts": {
+            "navigation": 30000,
+            "action": 10000,
+        },
     }
     with open(config_path, "w", encoding="utf-8") as config_file:
         json.dump(config, config_file)
@@ -119,6 +125,8 @@ def create_playwright_mcp_server(timeout_seconds=120):
         "args": args,
         "env": {
             "DEBUG": "pw:api,pw:browser*",
+            # Lambda has no system bus. Without this, Chrome blocks on D-Bus.
+            "DBUS_SESSION_BUS_ADDRESS": "/dev/null",
         },
     }
 

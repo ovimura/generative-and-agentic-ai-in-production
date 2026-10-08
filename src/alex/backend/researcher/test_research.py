@@ -17,15 +17,18 @@ import requests
 TERRAFORM_DIR = "terraform/4_researcher"
 
 
-def get_repo_root() -> Path:
-    return Path(
-        subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-    )
+def get_project_root() -> Path:
+    """Find the Alex project root.
+
+    This course keeps Alex under src/alex, so the git toplevel is not the
+    directory that contains terraform/4_researcher.
+    """
+    here = Path(__file__).resolve().parent
+    for candidate in [here, *here.parents]:
+        if (candidate / TERRAFORM_DIR).is_dir():
+            return candidate
+    print("Error: Could not find terraform/4_researcher above this script.")
+    sys.exit(1)
 
 
 def get_service_url():
@@ -39,11 +42,11 @@ def get_service_url():
             capture_output=True,
             text=True,
             check=True,
-            cwd=get_repo_root() / TERRAFORM_DIR,
+            cwd=get_project_root() / TERRAFORM_DIR,
         )
         return result.stdout.strip().rstrip("/")
     except subprocess.CalledProcessError as e:
-        print(f"❌ Error getting researcher URL: {e}")
+        print(f"Error getting researcher URL: {e}")
         print("   Make sure terraform/4_researcher has been applied after deploying the image.")
         sys.exit(1)
 
@@ -58,10 +61,10 @@ def test_research(topic=None):
     service_url = get_service_url()
 
     if not service_url:
-        print("❌ Could not get service URL")
+        print("Could not get service URL")
         sys.exit(1)
 
-    print(f"✅ Found service at: {service_url}")
+    print(f"Found service at: {service_url}")
 
     # Test health endpoint first
     print("\nChecking service health...")
@@ -69,14 +72,14 @@ def test_research(topic=None):
         health_url = f"{service_url}/health"
         response = requests.get(health_url, timeout=10)
         response.raise_for_status()
-        print("✅ Service is healthy")
+        print("Service is healthy")
     except requests.exceptions.RequestException as e:
-        print(f"❌ Health check failed: {e}")
+        print(f"Health check failed: {e}")
         print("   The service may still be starting. Try again in a minute.")
         sys.exit(1)
 
     # Call research endpoint
-    print(f"\n🔬 Generating research for: {display_topic}")
+    print(f"\nGenerating research for: {display_topic}")
     print("   This will take 20-30 seconds as the agent researches and analyzes...")
 
     try:
@@ -93,24 +96,24 @@ def test_research(topic=None):
         # Parse and display the result
         result = response.json()
 
-        print("\n✅ Research generated successfully!")
+        print("\nResearch generated successfully!")
         print("\n" + "=" * 60)
         print("RESEARCH RESULT:")
         print("=" * 60)
         print(result)
         print("=" * 60)
 
-        print("\n✅ The research has been automatically stored in your knowledge base.")
+        print("\nThe research has been automatically stored in your knowledge base.")
         print("   To verify, run:")
         print("     cd ../ingest")
         print("     uv run test_search_s3vectors.py")
 
     except requests.exceptions.Timeout:
-        print("❌ Request timed out. The service might be under heavy load.")
+        print("Request timed out. The service might be under heavy load.")
         print("   Try again in a moment.")
         sys.exit(1)
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error calling research endpoint: {e}")
+        print(f"Error calling research endpoint: {e}")
         if hasattr(e, "response") and e.response is not None:
             try:
                 error_detail = e.response.json()

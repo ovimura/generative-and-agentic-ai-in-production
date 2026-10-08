@@ -52,10 +52,18 @@ def terraform_output(terraform_dir: Path, output_name: str) -> str:
     )
 
 
-def get_repo_root() -> Path:
-    return Path(
-        run_command(["git", "rev-parse", "--show-toplevel"], capture_output=True)
-    )
+def get_project_root() -> Path:
+    """Find the Alex project root.
+
+    This course keeps Alex under src/alex, so the git toplevel is not the
+    directory that contains terraform/4_researcher.
+    """
+    here = Path(__file__).resolve().parent
+    for candidate in [here, *here.parents]:
+        if (candidate / "terraform" / "4_researcher").is_dir():
+            return candidate
+    print("Error: Could not find terraform/4_researcher above this script.")
+    sys.exit(1)
 
 
 def write_image_override(terraform_dir: Path, image_uri: str):
@@ -100,16 +108,16 @@ def wait_for_lambda_active(region: str, function_name: str):
         ).strip()
 
         if status == "Successful" and state == "Active":
-            print("✅ Lambda is active.")
+            print("Lambda is active.")
             return
         if status == "Failed":
-            print("❌ Lambda update failed. Check the AWS Console or CloudWatch logs.")
+            print("Lambda update failed. Check the AWS Console or CloudWatch logs.")
             sys.exit(1)
 
         print(".", end="", flush=True)
         time.sleep(5)
 
-    print("\n⚠️ Lambda update is taking longer than expected.")
+    print("\nLambda update is taking longer than expected.")
 
 
 def main():
@@ -131,9 +139,9 @@ def main():
     print(f"AWS Account: {account_id}")
     print(f"Region: {region}")
 
-    repo_root = get_repo_root()
-    terraform_dir = repo_root / "terraform" / "4_researcher"
-    backend_dir = repo_root / "backend" / "researcher"
+    project_root = get_project_root()
+    terraform_dir = project_root / "terraform" / "4_researcher"
+    backend_dir = Path(__file__).resolve().parent
 
     print("\nEnsuring Terraform ECR prerequisites exist...")
     terraform_apply(
@@ -198,7 +206,7 @@ def main():
     # Push to ECR
     print("\nPushing image to ECR...")
     run_command(["docker", "push", remote_image])
-    print("\n✅ Docker image pushed successfully!")
+    print("\nDocker image pushed successfully!")
 
     print("\nApplying Terraform with the new image...")
     write_image_override(terraform_dir, remote_image)
@@ -209,7 +217,7 @@ def main():
 
     wait_for_lambda_active(region, function_name)
 
-    print("\n🚀 Your service is available at:")
+    print("\nYour service is available at:")
     print(f"   {service_url}")
     print("\nTest it with:")
     print(f"   curl {service_url.rstrip('/')}/health")
