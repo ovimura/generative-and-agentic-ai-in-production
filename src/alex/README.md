@@ -14,7 +14,28 @@ _If you're looking at this in Cursor, please right click on the filename in the 
 2. **backend** - the agent code, organized into subdirectories, each a uv project (as is the backend parent directory)
 3. **frontend** - a NextJS React frontend integrated with Clerk
 4. **terraform** - separate terraform subdirectories with state for each part
-5. **scripts** - the final deployment script
+5. **scripts** - the final deployment script, including `run_local.py`
+
+#### Run locally
+
+`scripts/run_local.py` starts the FastAPI API on port 8000 and the Next.js frontend on port 3000. It needs `src/alex/.env` and `frontend/.env.local`.
+
+On Windows PowerShell, set UTF-8 before starting. The script prints emoji, and the default cp1252 console raises `UnicodeEncodeError` and exits before either server starts.
+
+```powershell
+cd src/alex/scripts
+$env:PYTHONUTF8 = "1"
+uv run .\run_local.py
+```
+
+On macOS or Linux:
+
+```bash
+cd src/alex/scripts
+uv run run_local.py
+```
+
+Run one copy. The script waits until the process it started is listening on ports 3000 and 8000. If either port is already taken, it exits and asks you to stop the other process. Stopping the script on Windows also stops the Next.js and API child processes, so those ports are released.
 
 #### Order of play:
 

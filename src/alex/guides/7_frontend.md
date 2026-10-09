@@ -125,13 +125,17 @@ This installs React, NextJS, Tailwind CSS, and other dependencies.
 
 We'll run both the backend API and frontend together:
 
-```bash
-# Navigate to scripts directory
-# Go to alex/scripts in your terminal
-
-# Start both frontend and backend
-uv run run_local.py
+```powershell
+# From alex/scripts. PYTHONUTF8 is required on Windows PowerShell;
+# the default cp1252 console cannot print this script's emoji.
+cd src/alex/scripts
+$env:PYTHONUTF8 = "1"
+uv run .\run_local.py
 ```
+
+On macOS or Linux, `uv run run_local.py` from `alex/scripts` is enough.
+
+The script succeeds only when the process it started is listening. If port 3000 or 8000 is already in use, stop the other Next.js or API process and run it once.
 
 You should see:
 ```
@@ -607,9 +611,11 @@ Your Alex Financial Advisor is now live and ready for users! 🎉
 - **Clerk Dashboard**: https://dashboard.clerk.com
 
 ### Common Commands
-```bash
-# Local development
-uv run run_local.py
+```powershell
+# Local development, from alex/scripts
+# On Windows PowerShell, set this first so the script can print its status
+$env:PYTHONUTF8 = "1"
+uv run .\run_local.py
 
 # Deploy frontend
 npm run build
