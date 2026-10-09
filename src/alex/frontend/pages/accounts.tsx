@@ -43,7 +43,7 @@ export default function Accounts() {
 
   const loadAccounts = useCallback(async () => {
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/accounts`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -120,7 +120,7 @@ export default function Accounts() {
     setMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/populate-test-data`, {
         method: 'POST',
         headers: {
@@ -149,7 +149,7 @@ export default function Accounts() {
     setMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/reset-accounts`, {
         method: 'DELETE',
         headers: {
@@ -197,7 +197,7 @@ export default function Accounts() {
     setMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/accounts`, {
         method: 'POST',
         headers: {
@@ -233,7 +233,7 @@ export default function Accounts() {
     setMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/accounts/${accountId}`, {
         method: 'DELETE',
         headers: {

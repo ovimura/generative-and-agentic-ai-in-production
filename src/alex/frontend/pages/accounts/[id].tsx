@@ -55,7 +55,7 @@ export default function AccountDetail() {
     if (!id) return;
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
 
       // Load account details
       const accountResponse = await fetch(`${API_URL}/api/accounts`, {
@@ -129,7 +129,7 @@ export default function AccountDetail() {
     setMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/accounts/${id}`, {
         method: 'PUT',
         headers: {
@@ -170,7 +170,7 @@ export default function AccountDetail() {
     setMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/positions/${positionId}`, {
         method: 'PUT',
         headers: {
@@ -202,7 +202,7 @@ export default function AccountDetail() {
     setMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/positions/${positionId}`, {
         method: 'DELETE',
         headers: {
@@ -240,7 +240,7 @@ export default function AccountDetail() {
     setMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getToken({ skipCache: true });
       const response = await fetch(`${API_URL}/api/positions`, {
         method: 'POST',
         headers: {

@@ -6,6 +6,7 @@ Handles all API routes with Clerk JWT authentication
 import os
 import json
 import logging
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -19,6 +20,8 @@ import boto3
 from mangum import Mangum
 from dotenv import load_dotenv
 from fastapi_clerk_auth import ClerkConfig, ClerkHTTPBearer, HTTPAuthorizationCredentials
+from fastapi.encoders import jsonable_encoder
+import jwt
 
 from src import Database
 from src.schemas import (
@@ -29,8 +32,9 @@ from src.schemas import (
     JobType, JobStatus
 )
 
-# Load environment variables
-load_dotenv(override=True)
+# Load environment variables from the Alex project root. The API is started
+# from backend/api, and a closer empty .env would hide CLERK_JWKS_URL.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -100,7 +104,36 @@ SQS_QUEUE_URL = os.getenv('SQS_QUEUE_URL', '')
 
 # Clerk authentication setup (exactly like saas reference)
 clerk_config = ClerkConfig(jwks_url=os.getenv("CLERK_JWKS_URL"))
-clerk_guard = ClerkHTTPBearer(clerk_config)
+
+
+class LoggingClerkHTTPBearer(ClerkHTTPBearer):
+    """Log the JWT failure. The library otherwise turns every failure into a bare 403."""
+
+    def _decode_token(self, token: str) -> dict | None:
+        try:
+            signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+            decoded_token = jwt.decode(
+                token,
+                key=signing_key.key,
+                audience=self.audience,
+                issuer=self.issuer,
+                algorithms=["RS256"],
+                leeway=30,
+                options={
+                    "verify_exp": self.config.verify_exp,
+                    "verify_nbf": True,
+                    "verify_iat": False,
+                    "verify_aud": self.config.verify_aud,
+                    "verify_iss": self.config.verify_iss,
+                },
+            )
+            return dict(jsonable_encoder(decoded_token))
+        except Exception as exc:
+            logger.warning("Clerk token rejected: %s", exc)
+            return None
+
+
+clerk_guard = LoggingClerkHTTPBearer(clerk_config)
 
 async def get_current_user_id(creds: HTTPAuthorizationCredentials = Depends(clerk_guard)) -> str:
     """Extract user ID from validated Clerk token"""

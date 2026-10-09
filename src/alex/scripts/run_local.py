@@ -17,15 +17,29 @@ IS_WINDOWS = sys.platform == "win32"
 # Track subprocesses for cleanup
 processes = []
 
+def stop_process(proc):
+    """Stop a process and, on Windows, the children it spawned."""
+    if proc.poll() is not None:
+        return
+    if IS_WINDOWS:
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+            capture_output=True,
+            text=True,
+        )
+        return
+    try:
+        proc.terminate()
+        proc.wait(timeout=5)
+    except Exception:
+        proc.kill()
+
+
 def cleanup(signum=None, frame=None):
     """Clean up all subprocess on exit"""
     print("\n🛑 Shutting down services...")
     for proc in processes:
-        try:
-            proc.terminate()
-            proc.wait(timeout=5)
-        except:
-            proc.kill()
+        stop_process(proc)
     sys.exit(0)
 
 # Register cleanup handlers
@@ -105,29 +119,40 @@ def start_backend():
         print("  Installing backend dependencies...")
         subprocess.run(["uv", "sync"], cwd=backend_dir, check=True)
 
-    # Start the backend
+    # Start the backend. Merge stderr so a bind failure is visible.
     proc = subprocess.Popen(
         ["uv", "run", "main.py"],
         cwd=backend_dir,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
         bufsize=1
     )
     processes.append(proc)
 
-    # Wait for backend to start
+    # Wait until THIS process says it is listening. An HTTP check alone can
+    # succeed against an older server that is already on port 8000.
     print("  Waiting for backend to start...")
+    import threading
+    ready = {"ok": False}
+
+    def read_backend():
+        for line in proc.stdout:
+            print(f"    Backend: {line.strip()}")
+            if "Uvicorn running" in line or "Application startup complete" in line:
+                ready["ok"] = True
+
+    threading.Thread(target=read_backend, daemon=True).start()
+
     for _ in range(30):  # 30 second timeout
-        try:
-            import httpx
-            response = httpx.get("http://localhost:8000/health")
-            if response.status_code == 200:
-                print("  ✅ Backend running at http://localhost:8000")
-                print("     API docs: http://localhost:8000/docs")
-                return proc
-        except:
-            time.sleep(1)
+        if proc.poll() is not None:
+            print("  ❌ Backend exited during startup. Port 8000 is already in use if another API is still running.")
+            cleanup()
+        if ready["ok"]:
+            print("  ✅ Backend running at http://localhost:8000")
+            print("     API docs: http://localhost:8000/docs")
+            return proc
+        time.sleep(1)
 
     print("  ❌ Backend failed to start")
     cleanup()
@@ -155,36 +180,31 @@ def start_frontend():
     )
     processes.append(proc)
 
-    # Wait for frontend to start
+    # Wait until THIS process prints its own URL. Probing port 3000 accepts
+    # a leftover Next.js server while the new one has moved to another port.
     print("  Waiting for frontend to start...")
-    import httpx
     import threading
 
-    # Read frontend output in a background thread (select.select doesn't work on Windows pipes)
-    started_flag = {"started": False}
+    started_flag = {"started": False, "blocked": False}
 
     def read_output():
         for line in proc.stdout:
             print(f"    Frontend: {line.strip()}")
-            if "ready" in line.lower() or "compiled" in line.lower() or "started server" in line.lower():
+            if "Port 3000 is in use" in line or "EPERM" in line:
+                started_flag["blocked"] = True
+            if "Local:" in line and "http://localhost:3000" in line:
                 started_flag["started"] = True
 
     reader = threading.Thread(target=read_output, daemon=True)
     reader.start()
 
-    for i in range(30):  # 30 second timeout
-        if started_flag["started"] or i > 5:  # Start checking after 5 seconds
-            try:
-                response = httpx.get("http://localhost:3000", timeout=1)
-                print("  ✅ Frontend running at http://localhost:3000")
-                return proc
-            except httpx.ConnectError:
-                pass  # Server not ready yet
-            except:
-                # Any other response means server is up
-                print("  ✅ Frontend running at http://localhost:3000")
-                return proc
-
+    for _ in range(30):  # 30 second timeout
+        if proc.poll() is not None or started_flag["blocked"]:
+            print("  ❌ Frontend could not use port 3000. Stop the other Next.js process and run this again.")
+            cleanup()
+        if started_flag["started"]:
+            print("  ✅ Frontend running at http://localhost:3000")
+            return proc
         time.sleep(1)
 
     print("  ❌ Frontend failed to start")
@@ -202,23 +222,14 @@ def monitor_processes():
     print("\n📝 Logs will appear below. Press Ctrl+C to stop.\n")
     print("="*60 + "\n")
 
-    # Monitor processes
+    # Reader threads already print each process's output.
     while True:
         for proc in processes:
-            # Check if process is still running
             if proc.poll() is not None:
-                print(f"\n⚠️  A process has stopped unexpectedly!")
+                print(f"\n⚠️  A process has stopped unexpectedly (exit {proc.returncode})!")
                 cleanup()
 
-            # Read any available output
-            try:
-                line = proc.stdout.readline()
-                if line:
-                    print(f"[LOG] {line.strip()}")
-            except:
-                pass
-
-        time.sleep(0.1)
+        time.sleep(0.5)
 
 def main():
     """Main entry point"""
