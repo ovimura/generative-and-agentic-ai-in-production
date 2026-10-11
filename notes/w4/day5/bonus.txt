@@ -1,0 +1,42 @@
+Bonus Lecture - Your Exclusive Links
+You made it to the end - and this final lecture is my way of saying thank you.
+
+Below you'll find every course I teach, each with a link to my best available price. Think of it as your personal map of where to go next, with the discount already built in. Take your time and grab whatever's right for you.
+
+
+
+Your courses, at your special price
+
+AI Builder: Create Agents, Voice Agents & Automations in n8n -> Claim your special price here (https://offer.propagated.ai/ai-builder)
+
+AI Coder: Complete Claude Code & Coding Agents Course -> Claim your special price here (https://offer.propagated.ai/ai-coder)
+
+AI Leader: Generative AI & Agentic AI for Leaders & Founders -> Claim your special price here (https://offer.propagated.ai/ai-leader)
+
+AI Engineer Core Track: LLM Engineering, RAG, QLoRA, Agents -> Claim your special price here (https://offer.propagated.ai/ai-engineer-core)
+
+AI Engineer Agentic Track: The Complete Agent & MCP Course -> Claim your special price here (https://offer.propagated.ai/ai-engineer-agentic)
+
+AI Engineer Production Track: Deploy LLMs & Agents at Scale -> Claim your special price here (https://offer.propagated.ai/ai-engineer-production)
+
+
+
+How the courses fit together
+
+The most common question I get is how my courses fit together and what order to take them in. Here's the short version: all six complement each other with very little overlap - each one covers different ground. Here's what each sets you up to do:
+
+
+
+AI Builder - create agents and voice agents for your business without writing a line of code.
+
+AI Coder - use coding agents like Claude Code to deliver software at astonishing speed.
+
+AI Leader - deliver real commercial impact with AI, whether at a startup or a Fortune 500.
+
+AI Engineer Core Track - select, apply, and optimize LLMs to solve real-world commercial problems.
+
+AI Engineer Agentic Track - the same, but with autonomous AI agents.
+
+AI Engineer Production Track - deploy LLMs and agents on the cloud at scale, with resiliency, observability, and security.
+
+A rough guide to who each is for: the first three (Builder, Coder, Leader) suit a wide audience, technical or not. The Core and Agentic tracks are for the technical or the aspiring-technical. The Production track is the most advanced, best once you're already technical or you've worked through the others.
